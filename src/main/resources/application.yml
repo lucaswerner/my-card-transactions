@@ -1,6 +1,3 @@
-hibernate:
-  show_sql: true
-
 spring:
   application:
     name: 'transactions'

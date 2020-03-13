@@ -1,5 +1,7 @@
 package com.mycard.transactions.service.impl;
 
+import com.mycard.transactions.client.UsersClient;
+import com.mycard.transactions.dto.UserDTO;
 import com.mycard.transactions.entity.Transaction;
 import com.mycard.transactions.repository.TransactionRepository;
 import com.mycard.transactions.service.TransactionService;
@@ -15,8 +17,12 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository) {
+    @Autowired
+    private UsersClient usersClient;
+
+    public TransactionServiceImpl(TransactionRepository transactionRepository, UsersClient usersClient) {
         this.transactionRepository = transactionRepository;
+        this.usersClient = usersClient;
     }
 
     @Override
@@ -31,6 +37,11 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction saveTransaction(Transaction transaction) {
+
+        final UserDTO user = usersClient.getUser(transaction.getUserId());
+
+        System.out.println(user);
+
         return transactionRepository.save(transaction);
     }
 }
