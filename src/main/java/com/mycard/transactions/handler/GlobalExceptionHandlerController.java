@@ -32,4 +32,9 @@ public class GlobalExceptionHandlerController {
     public void handleException(HttpServletResponse res) throws IOException {
         res.sendError(HttpStatus.BAD_REQUEST.value(), "Something went wrong");
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public void handleIllegalStateException(IllegalStateException e, HttpServletResponse res) throws IOException {
+        res.sendError(HttpStatus.BAD_REQUEST.value(), e.getMessage());
+    }
 }

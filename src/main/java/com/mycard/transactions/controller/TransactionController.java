@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("transactions")
@@ -66,7 +67,8 @@ public class TransactionController {
     @ApiResponses(value = {
             @ApiResponse(code = 400, message = "Something went wrong")
     })
-    public ResponseEntity<TransactionDTO> saveTransaction(@Valid @RequestBody PostTransactionDTO postTransactionDTO, HttpServletRequest request) {
+    public ResponseEntity<TransactionDTO> saveTransaction(@Valid @RequestBody PostTransactionDTO postTransactionDTO, HttpServletRequest request)
+            throws ExecutionException, InterruptedException {
         final Transaction savedTransaction = transactionService.saveTransaction(this.modelMapper.map(postTransactionDTO, Transaction.class));
 
         final URI location = URI.create(String.format(

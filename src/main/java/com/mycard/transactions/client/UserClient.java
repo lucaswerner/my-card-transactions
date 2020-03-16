@@ -5,9 +5,11 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient("users")
-public interface UsersClient {
+import java.util.Optional;
 
-    @GetMapping("/api/v1/users/{id}")
-    UserDTO getUser(@PathVariable Long id);
+@FeignClient(name = "my-card-users", path = "/api/v1/users  ", qualifier = "user-client")
+public interface UserClient {
+
+    @GetMapping("/{id}")
+    Optional<UserDTO> getUser(@PathVariable("id") Long id);
 }
