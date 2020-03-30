@@ -1,5 +1,6 @@
 package com.mycard.transactions.handler;
 
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
@@ -36,5 +37,10 @@ public class GlobalExceptionHandlerController {
     @ExceptionHandler(IllegalStateException.class)
     public void handleIllegalStateException(IllegalStateException e, HttpServletResponse res) throws IOException {
         res.sendError(HttpStatus.BAD_REQUEST.value(), e.getMessage());
+    }
+
+    @ExceptionHandler(HystrixRuntimeException.class)
+    public void handleHystrixRuntimeException(HttpServletResponse res) throws IOException {
+        res.sendError(HttpStatus.GATEWAY_TIMEOUT.value(), "Request timeout");
     }
 }

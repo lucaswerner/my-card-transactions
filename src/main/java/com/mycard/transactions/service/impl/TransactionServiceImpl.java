@@ -7,6 +7,7 @@ import com.mycard.transactions.dto.UserDTO;
 import com.mycard.transactions.entity.Transaction;
 import com.mycard.transactions.repository.TransactionRepository;
 import com.mycard.transactions.service.TransactionService;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,16 +41,19 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @HystrixCommand(threadPoolKey = "getTransactionThreadPool")
     public Optional<Transaction> getTransaction(Long id) {
         return transactionRepository.findById(id);
     }
 
     @Override
+    @HystrixCommand(threadPoolKey = "getTransactionListThreadPool")
     public List<Transaction> getTransactionList() {
         return transactionRepository.findAll();
     }
 
     @Override
+    @HystrixCommand(threadPoolKey = "saveTransactionThreadPool")
     public Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException {
 
         final CompletableFuture<Optional<UserDTO>> completableFutureUser =
