@@ -67,8 +67,10 @@ public class TransactionController {
     @ApiResponses(value = {
             @ApiResponse(code = 400, message = "Something went wrong")
     })
-    public ResponseEntity<TransactionDTO> saveTransaction(@Valid @RequestBody PostTransactionDTO postTransactionDTO, HttpServletRequest request)
+    public ResponseEntity<TransactionDTO> saveTransaction(@Valid @RequestBody PostTransactionDTO postTransactionDTO,
+                                                          HttpServletRequest request)
             throws ExecutionException, InterruptedException {
+
         final Transaction savedTransaction = transactionService.saveTransaction(this.modelMapper.map(postTransactionDTO, Transaction.class));
 
         final URI location = URI.create(String.format(

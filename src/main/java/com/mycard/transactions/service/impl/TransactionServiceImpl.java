@@ -1,12 +1,13 @@
 package com.mycard.transactions.service.impl;
 
 import com.mycard.transactions.client.CardClient;
-import com.mycard.transactions.client.UserClient;
 import com.mycard.transactions.dto.CardDTO;
 import com.mycard.transactions.dto.UserDTO;
 import com.mycard.transactions.entity.Transaction;
 import com.mycard.transactions.repository.TransactionRepository;
+import com.mycard.transactions.service.CardService;
 import com.mycard.transactions.service.TransactionService;
+import com.mycard.transactions.service.UserService;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,15 +30,15 @@ public class TransactionServiceImpl implements TransactionService {
     private TransactionRepository transactionRepository;
 
     @Autowired
-    private UserClient userClient;
+    private UserService userService;
 
     @Autowired
-    private CardClient cardClient;
+    private CardService cardService;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, UserClient userClient, CardClient cardClient) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, UserService userService, CardService cardService) {
         this.transactionRepository = transactionRepository;
-        this.userClient = userClient;
-        this.cardClient = cardClient;
+        this.userService = userService;
+        this.cardService = cardService;
     }
 
     @Override
@@ -56,16 +57,11 @@ public class TransactionServiceImpl implements TransactionService {
     @HystrixCommand(threadPoolKey = "saveTransactionThreadPool")
     public Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException {
 
-        final CompletableFuture<Optional<UserDTO>> completableFutureUser =
-                CompletableFuture.supplyAsync(() -> userClient.getUser(transaction.getUserId()));
-
+        final CompletableFuture<Optional<UserDTO>> completableFutureUser = userService.getUser(transaction.getUserId());
         final CompletableFuture<Optional<CardDTO>> completableFutureCard =
-                CompletableFuture.supplyAsync(() -> cardClient.getCard(transaction.getCardBin(), transaction.getCardNumber()));
+                cardService.getCard(transaction.getCardBin(), transaction.getCardNumber());
 
-        final CompletableFuture<Void> combinedFutureUserAndCard =
-                CompletableFuture.allOf(completableFutureUser, completableFutureCard);
-
-        combinedFutureUserAndCard.get();
+        CompletableFuture.allOf(completableFutureUser, completableFutureCard).join();
 
         final Optional<UserDTO> optionalUser = completableFutureUser.get();
 
@@ -89,7 +85,7 @@ public class TransactionServiceImpl implements TransactionService {
                 || cardExpiration.getYear() < today.getYear())
             throw new IllegalStateException("The indicated card expired!");
 
-        LOGGER.info("Saving new transaction!");
+        LOGGER.info("Saving new transaction: " + transaction);
 
         return transactionRepository.save(transaction);
     }
