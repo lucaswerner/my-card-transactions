@@ -2,14 +2,13 @@ package com.mycard.transactions.dto;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public @Data
 class UserDTO {
     private Long id;
+    private String name;
     private String email;
-    private String firstName;
-    private String lastName;
-    private Boolean stActive = Boolean.TRUE;
-    private LocalDateTime timestamp;
+    private boolean enabled;
+    private LocalDate lastLogin;
 }

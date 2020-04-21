@@ -1,6 +1,5 @@
 package com.mycard.transactions.service.impl;
 
-import com.mycard.transactions.client.CardClient;
 import com.mycard.transactions.dto.CardDTO;
 import com.mycard.transactions.dto.UserDTO;
 import com.mycard.transactions.entity.Transaction;
@@ -12,6 +11,7 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -70,7 +70,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         final UserDTO user = optionalUser.get();
 
-        if (!user.getStActive())
+        if (!user.isEnabled())
             throw new IllegalStateException("The indicated user is not active!");
 
         final Optional<CardDTO> optionalCard = completableFutureCard.get();
@@ -88,5 +88,15 @@ public class TransactionServiceImpl implements TransactionService {
         LOGGER.info("Saving new transaction: " + transaction);
 
         return transactionRepository.save(transaction);
+    }
+
+    @Override
+    public List<Transaction> getTransactionListByUserId(Long userId, Pageable pageable) {
+        return transactionRepository.findAllByUserId(userId, pageable);
+    }
+
+    @Override
+    public Optional<Transaction> getTransactionByIdAndUserId(Long id, Long userId) {
+        return transactionRepository.findByIdAndUserId(id, userId);
     }
 }

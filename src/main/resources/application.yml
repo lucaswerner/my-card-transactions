@@ -18,7 +18,9 @@ eureka:
 security:
   oauth2:
     resource:
-      user-info-uri: http://localhost:8088/user
+      service-id: my-card-auth
+      user-info-uri: http://${security.oauth2.resource.service-id}/user
+      loadBalanced: true
 
 hystrix:
   shareSecurityContext: true

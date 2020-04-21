@@ -57,6 +57,6 @@ public class GlobalExceptionHandlerController {
             return;
         }
 
-        res.sendError(HttpStatus.BAD_REQUEST.value(), "Something went wrong");
+        this.handleException(e, res);
     }
 }

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Optional;
 
-@FeignClient(value = "my-card-users", path = "/api/v1/users", qualifier = "user-client")
+@FeignClient(value = "my-card-auth", path = "/user", qualifier = "user-client")
 public interface UserClient {
 
     @GetMapping("/{id}")
