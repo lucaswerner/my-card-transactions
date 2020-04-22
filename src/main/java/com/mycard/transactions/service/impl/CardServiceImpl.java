@@ -18,7 +18,7 @@ public class CardServiceImpl implements CardService {
 
     @Async
     @Override
-    public CompletableFuture<Optional<CardDTO>> getCard(Long bin, Long number) {
-        return CompletableFuture.completedFuture(cardClient.getCard(bin, number));
+    public CompletableFuture<Optional<CardDTO>> getCard(Long bin, Long number, Long userId) {
+        return CompletableFuture.completedFuture(cardClient.getCard(bin, number, userId));
     }
 }

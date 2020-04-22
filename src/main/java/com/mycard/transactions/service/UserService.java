@@ -8,6 +8,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface UserService {
 
-    CompletableFuture<Optional<UserDTO>> getUser(@PathVariable("id") Long id);
+    CompletableFuture<Optional<UserDTO>> getUser(Long id);
 
 }

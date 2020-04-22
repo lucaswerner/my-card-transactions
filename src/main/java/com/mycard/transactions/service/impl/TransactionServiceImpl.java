@@ -59,7 +59,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         final CompletableFuture<Optional<UserDTO>> completableFutureUser = userService.getUser(transaction.getUserId());
         final CompletableFuture<Optional<CardDTO>> completableFutureCard =
-                cardService.getCard(transaction.getCardBin(), transaction.getCardNumber());
+                cardService.getCard(transaction.getCardBin(), transaction.getCardNumber(), transaction.getUserId());
 
         CompletableFuture.allOf(completableFutureUser, completableFutureCard).join();
 

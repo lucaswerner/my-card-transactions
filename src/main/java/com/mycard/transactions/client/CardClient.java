@@ -10,6 +10,9 @@ import java.util.Optional;
 @FeignClient(value = "my-card-cards", path = "/api/v1/cards", qualifier = "card-client")
 public interface CardClient {
 
-    @GetMapping("/{bin}/{number}")
-    Optional<CardDTO> getCard(@PathVariable("bin") Long bin, @PathVariable("number") Long number);
+    @GetMapping("/{bin}/{number}/{userId}")
+    Optional<CardDTO> getCard(
+            @PathVariable("bin") Long bin,
+            @PathVariable("number") Long number,
+            @PathVariable("userId") Long userId);
 }
