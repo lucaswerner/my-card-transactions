@@ -2,8 +2,28 @@ spring:
   datasource:
     type: com.mchange.v2.c3p0.ComboPooledDataSource
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: update
+    open-in-view: false
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+  cache:
+    type: redis
+  redis:
+    client-name: my-card-redis
+    host: localhost
+    port: 6379
+    timeout: 2000
+    password: redispass
+    lettuce:
+      pool:
+        max-active: 50
+        max-idle: 50
+        max-wait: 50ms
+        min-idle: 0
 
 server:
   port: 8082
@@ -23,10 +43,29 @@ security:
       loadBalanced: true
 
 hystrix:
-  shareSecurityContext: true
   command:
     default:
       execution:
         isolation:
           thread:
             timeoutInMilliseconds: 3000
+  threadpool:
+    default:
+      coreSize: 8
+      maximumSize: 8
+
+ribbon:
+  eager-load:
+    enabled: true
+    clients: my-card-auth, my-card-cards
+
+logging:
+  level:
+    org:
+      springframework:
+        cache: TRACE
+    com:
+      netflix:
+        config:
+          sources:
+            URLConfigurationSource: ERROR

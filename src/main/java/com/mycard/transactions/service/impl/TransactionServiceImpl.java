@@ -1,6 +1,8 @@
 package com.mycard.transactions.service.impl;
 
 import com.mycard.transactions.dto.CardDTO;
+import com.mycard.transactions.dto.PostTransactionDTO;
+import com.mycard.transactions.dto.TransactionDTO;
 import com.mycard.transactions.dto.UserDTO;
 import com.mycard.transactions.entity.Transaction;
 import com.mycard.transactions.repository.TransactionRepository;
@@ -8,53 +10,52 @@ import com.mycard.transactions.service.CardService;
 import com.mycard.transactions.service.TransactionService;
 import com.mycard.transactions.service.UserService;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 
 @Service
+@CacheConfig(cacheNames = "TransactionService")
 public class TransactionServiceImpl implements TransactionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
-    @Autowired
+    private static final int USER_TRANSACTIONS_PER_PAGE = 10;
+
     private TransactionRepository transactionRepository;
-
-    @Autowired
     private UserService userService;
-
-    @Autowired
     private CardService cardService;
+    private ModelMapper modelMapper;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, UserService userService, CardService cardService) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, UserService userService, CardService cardService, ModelMapper modelMapper) {
         this.transactionRepository = transactionRepository;
         this.userService = userService;
         this.cardService = cardService;
+        this.modelMapper = modelMapper;
     }
 
-    @Override
-    @HystrixCommand(threadPoolKey = "getTransactionThreadPool")
     public Optional<Transaction> getTransaction(Long id) {
         return transactionRepository.findById(id);
     }
 
-    @Override
-    @HystrixCommand(threadPoolKey = "getTransactionListThreadPool")
-    public List<Transaction> getTransactionList() {
-        return transactionRepository.findAll();
+    public Page<Transaction> getTransactionPage(Pageable pageable) {
+        return null;
     }
 
-    @Override
-    @HystrixCommand(threadPoolKey = "saveTransactionThreadPool")
     public Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException {
 
         final CompletableFuture<Optional<UserDTO>> completableFutureUser = userService.getUser(transaction.getUserId());
@@ -90,13 +91,50 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    @Override
-    public List<Transaction> getTransactionListByUserId(Long userId, Pageable pageable) {
+    public Page<Transaction> getTransactionPageByUserId(Long userId, Pageable pageable) {
         return transactionRepository.findAllByUserId(userId, pageable);
     }
 
-    @Override
     public Optional<Transaction> getTransactionByIdAndUserId(Long id, Long userId) {
         return transactionRepository.findByIdAndUserId(id, userId);
+    }
+
+    @CacheEvict(key = "{#cardDTO.userId, #result.id}")
+    @HystrixCommand(threadPoolKey = "saveTransactionDTOThreadPool")
+    public TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) throws ExecutionException, InterruptedException {
+        return transformTransactionToTransactionDTO(
+                saveTransaction(modelMapper.map(postTransactionDTO, Transaction.class)));
+    }
+
+    @HystrixCommand(threadPoolKey = "getTransactionDTOThreadPool")
+    public Optional<TransactionDTO> getTransactionDTO(Long id) {
+        return getTransaction(id)
+                .map(this::transformTransactionToTransactionDTO);
+    }
+
+    @HystrixCommand(threadPoolKey = "getTransactionDTOPageThreadPool")
+    public Page<TransactionDTO> getTransactionDTOPage(Pageable pageable) {
+        return getTransactionPage(pageable)
+                .map(this::transformTransactionToTransactionDTO);
+    }
+
+    @HystrixCommand(threadPoolKey = "getTransactionDTOPageByUserIdThreadPool")
+    public Page<TransactionDTO> getTransactionDTOPageByUserId(Long userId, Integer pageNumber) {
+        return getTransactionPageByUserId(
+                userId,
+                PageRequest.of(pageNumber, USER_TRANSACTIONS_PER_PAGE, Sort.by("timestamp").descending())
+        )
+                .map(this::transformTransactionToTransactionDTO);
+    }
+
+    @Cacheable(key = "{#userId, #id}")
+    @HystrixCommand(threadPoolKey = "getTransactionDTOByIdAndUserIdThreadPool")
+    public Optional<TransactionDTO> getTransactionDTOByIdAndUserId(Long id, Long userId) {
+        return getTransactionByIdAndUserId(id, userId)
+                .map(this::transformTransactionToTransactionDTO);
+    }
+
+    private TransactionDTO transformTransactionToTransactionDTO(Transaction transaction) {
+        return modelMapper.map(transaction, TransactionDTO.class);
     }
 }
