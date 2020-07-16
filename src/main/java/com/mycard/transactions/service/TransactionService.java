@@ -12,20 +12,11 @@ import java.util.concurrent.ExecutionException;
 public interface TransactionService {
     Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException;
 
-    Optional<Transaction> getTransaction(Long id);
-
-    Page<Transaction> getTransactionPage(Pageable pageable);
-
     Page<Transaction> getTransactionPageByUserId(Long userId, Pageable pageable);
 
     Optional<Transaction> getTransactionByIdAndUserId(Long id, Long userId);
 
-    //
     TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) throws ExecutionException, InterruptedException;
-
-    Optional<TransactionDTO> getTransactionDTO(Long id);
-
-    Page<TransactionDTO> getTransactionDTOPage(Pageable pageable);
 
     Page<TransactionDTO> getTransactionDTOPageByUserId(Long userId, Integer pageNumber);
 

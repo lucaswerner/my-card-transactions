@@ -7,8 +7,7 @@ import java.time.LocalDate;
 public @Data
 class UserDTO {
     private Long id;
-    private String name;
     private String email;
-    private boolean enabled;
+    private Boolean enabled;
     private LocalDate lastLogin;
 }

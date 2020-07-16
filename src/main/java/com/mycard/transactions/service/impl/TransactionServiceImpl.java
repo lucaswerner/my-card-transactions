@@ -14,7 +14,6 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -48,21 +47,15 @@ public class TransactionServiceImpl implements TransactionService {
         this.modelMapper = modelMapper;
     }
 
-    public Optional<Transaction> getTransaction(Long id) {
-        return transactionRepository.findById(id);
-    }
-
-    public Page<Transaction> getTransactionPage(Pageable pageable) {
-        return null;
-    }
-
     public Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException {
 
         final CompletableFuture<Optional<UserDTO>> completableFutureUser = userService.getUser(transaction.getUserId());
         final CompletableFuture<Optional<CardDTO>> completableFutureCard =
                 cardService.getCard(transaction.getCardBin(), transaction.getCardNumber(), transaction.getUserId());
 
-        CompletableFuture.allOf(completableFutureUser, completableFutureCard).join();
+        CompletableFuture.allOf(
+                completableFutureUser,
+                completableFutureCard).join();
 
         final Optional<UserDTO> optionalUser = completableFutureUser.get();
 
@@ -71,7 +64,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         final UserDTO user = optionalUser.get();
 
-        if (!user.isEnabled())
+        if (!user.getEnabled())
             throw new IllegalStateException("The indicated user is not active!");
 
         final Optional<CardDTO> optionalCard = completableFutureCard.get();
@@ -80,15 +73,17 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalStateException("The indicated card does not exist!");
 
         final CardDTO card = optionalCard.get();
-        final LocalDate cardExpiration = card.getExpiration();
-        final LocalDate today = LocalDate.now();
-        if (cardExpiration.getMonthValue() < today.getMonthValue()
-                || cardExpiration.getYear() < today.getYear())
+
+        if (isCardExpired(card.getExpiration(), LocalDate.now()))
             throw new IllegalStateException("The indicated card expired!");
 
         LOGGER.info("Saving new transaction: " + transaction);
 
         return transactionRepository.save(transaction);
+    }
+
+    private boolean isCardExpired(LocalDate cardExpiration, LocalDate today) {
+        return cardExpiration.getMonthValue() < today.getMonthValue() && cardExpiration.getYear() < today.getYear();
     }
 
     public Page<Transaction> getTransactionPageByUserId(Long userId, Pageable pageable) {
@@ -99,23 +94,10 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.findByIdAndUserId(id, userId);
     }
 
-    @CacheEvict(key = "{#cardDTO.userId, #result.id}")
     @HystrixCommand(threadPoolKey = "saveTransactionDTOThreadPool")
     public TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) throws ExecutionException, InterruptedException {
         return transformTransactionToTransactionDTO(
                 saveTransaction(modelMapper.map(postTransactionDTO, Transaction.class)));
-    }
-
-    @HystrixCommand(threadPoolKey = "getTransactionDTOThreadPool")
-    public Optional<TransactionDTO> getTransactionDTO(Long id) {
-        return getTransaction(id)
-                .map(this::transformTransactionToTransactionDTO);
-    }
-
-    @HystrixCommand(threadPoolKey = "getTransactionDTOPageThreadPool")
-    public Page<TransactionDTO> getTransactionDTOPage(Pageable pageable) {
-        return getTransactionPage(pageable)
-                .map(this::transformTransactionToTransactionDTO);
     }
 
     @HystrixCommand(threadPoolKey = "getTransactionDTOPageByUserIdThreadPool")
