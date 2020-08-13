@@ -7,6 +7,6 @@ import java.util.concurrent.CompletableFuture;
 
 public interface CardService {
 
-    CompletableFuture<Optional<CardDTO>> getCard(Long bin, Long number, Long userId);
+    CompletableFuture<CardDTO> getValidCard(Long bin, Long number, Long userId);
 
 }

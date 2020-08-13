@@ -16,14 +16,8 @@ spring:
     client-name: my-card-redis
     host: localhost
     port: 6379
-    timeout: 2000
+    timeout: 200
     password: redispass
-    lettuce:
-      pool:
-        max-active: 50
-        max-idle: 50
-        max-wait: 50ms
-        min-idle: 0
 
 server:
   port: 8082

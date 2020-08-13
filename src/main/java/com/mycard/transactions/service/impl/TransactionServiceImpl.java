@@ -21,10 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 
 @Service
@@ -47,43 +45,18 @@ public class TransactionServiceImpl implements TransactionService {
         this.modelMapper = modelMapper;
     }
 
-    public Transaction saveTransaction(Transaction transaction) throws ExecutionException, InterruptedException {
+    public Transaction saveTransaction(Transaction transaction) {
 
-        final CompletableFuture<Optional<UserDTO>> completableFutureUser = userService.getUser(transaction.getUserId());
-        final CompletableFuture<Optional<CardDTO>> completableFutureCard =
-                cardService.getCard(transaction.getCardBin(), transaction.getCardNumber(), transaction.getUserId());
+        final CompletableFuture<UserDTO> completableFutureUser = userService.getValidUser(transaction.getUserId());
+        final CompletableFuture<CardDTO> completableFutureCard = cardService.getValidCard(transaction.getCardBin(), transaction.getCardNumber(), transaction.getUserId());
 
         CompletableFuture.allOf(
                 completableFutureUser,
                 completableFutureCard).join();
 
-        final Optional<UserDTO> optionalUser = completableFutureUser.get();
-
-        if (optionalUser.isEmpty())
-            throw new IllegalStateException("The indicated user does not exist!");
-
-        final UserDTO user = optionalUser.get();
-
-        if (!user.getEnabled())
-            throw new IllegalStateException("The indicated user is not active!");
-
-        final Optional<CardDTO> optionalCard = completableFutureCard.get();
-
-        if (optionalCard.isEmpty())
-            throw new IllegalStateException("The indicated card does not exist!");
-
-        final CardDTO card = optionalCard.get();
-
-        if (isCardExpired(card.getExpiration(), LocalDate.now()))
-            throw new IllegalStateException("The indicated card expired!");
-
         LOGGER.info("Saving new transaction: " + transaction);
 
         return transactionRepository.save(transaction);
-    }
-
-    private boolean isCardExpired(LocalDate cardExpiration, LocalDate today) {
-        return cardExpiration.getMonthValue() < today.getMonthValue() && cardExpiration.getYear() < today.getYear();
     }
 
     public Page<Transaction> getTransactionPageByUserId(Long userId, Pageable pageable) {
@@ -95,7 +68,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @HystrixCommand(threadPoolKey = "saveTransactionDTOThreadPool")
-    public TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) throws ExecutionException, InterruptedException {
+    public TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) {
         return transformTransactionToTransactionDTO(
                 saveTransaction(modelMapper.map(postTransactionDTO, Transaction.class)));
     }

@@ -19,8 +19,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Async
-    @Override
-    public CompletableFuture<Optional<UserDTO>> getUser(Long id) {
-        return CompletableFuture.completedFuture(userClient.getUser(id));
+    public CompletableFuture<UserDTO> getValidUser(Long id) {
+        final Optional<UserDTO> optionalUser = userClient.getUser(id);
+
+        if (optionalUser.isEmpty())
+            throw new IllegalStateException("The indicated user does not exist!");
+
+        final UserDTO user = optionalUser.get();
+
+        if (!user.getEnabled())
+            throw new IllegalStateException("The indicated user is not active!");
+
+        return CompletableFuture.completedFuture(user);
     }
 }
