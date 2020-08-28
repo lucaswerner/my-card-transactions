@@ -21,8 +21,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -33,10 +38,10 @@ public class TransactionServiceImpl implements TransactionService {
 
     private static final int USER_TRANSACTIONS_PER_PAGE = 10;
 
-    private TransactionRepository transactionRepository;
-    private UserService userService;
-    private CardService cardService;
-    private ModelMapper modelMapper;
+    private final TransactionRepository transactionRepository;
+    private final UserService userService;
+    private final CardService cardService;
+    private final ModelMapper modelMapper;
 
     public TransactionServiceImpl(TransactionRepository transactionRepository, UserService userService, CardService cardService, ModelMapper modelMapper) {
         this.transactionRepository = transactionRepository;
@@ -67,6 +72,20 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.findByIdAndUserId(id, userId);
     }
 
+    @Override
+    public List<Transaction> getTransactionListByCardAndDate(
+            Long cardBin,
+            Long cardNumber,
+            LocalDate timeStampStart,
+            LocalDate timestampEnd) {
+        return transactionRepository.findAllByCardBinAndCardNumberAndTimestampBetween(
+                cardBin,
+                cardNumber,
+                LocalDateTime.of(timeStampStart, LocalTime.MIN),
+                LocalDateTime.of(timestampEnd, LocalTime.MAX)
+        );
+    }
+
     @HystrixCommand(threadPoolKey = "saveTransactionDTOThreadPool")
     public TransactionDTO saveTransaction(PostTransactionDTO postTransactionDTO) {
         return transformTransactionToTransactionDTO(
@@ -83,11 +102,25 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Cacheable(key = "{#userId, #id}")
-    @HystrixCommand(threadPoolKey = "getTransactionDTOByIdAndUserIdThreadPool")
+    @HystrixCommand(threadPoolKey = "getTransactionDTOByIdAndUserIdTP")
     public Optional<TransactionDTO> getTransactionDTOByIdAndUserId(Long id, Long userId) {
         return getTransactionByIdAndUserId(id, userId)
                 .map(this::transformTransactionToTransactionDTO);
     }
+
+    @HystrixCommand(threadPoolKey = "getTransactionDTOListByCardAndDateTP")
+    public List<TransactionDTO> getTransactionDTOListByCardAndDate(
+            Long cardBin,
+            Long cardNumber,
+            LocalDate timeStampStart,
+            LocalDate timestampEnd
+    ) {
+        return getTransactionListByCardAndDate(cardBin, cardNumber, timeStampStart, timestampEnd)
+                .stream()
+                .map(this::transformTransactionToTransactionDTO)
+                .collect(Collectors.toList());
+    }
+
 
     private TransactionDTO transformTransactionToTransactionDTO(Transaction transaction) {
         return modelMapper.map(transaction, TransactionDTO.class);
