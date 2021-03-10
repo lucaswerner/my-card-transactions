@@ -4,7 +4,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-#      ddl-auto: update
+      ddl-auto: create
     open-in-view: false
   cloud:
     loadbalancer:
@@ -15,9 +15,9 @@ spring:
   redis:
     client-name: my-card-redis
     host: localhost
-    port: 6379
+    port: 6380
     timeout: 200
-    password: redispass
+    password: redis-transactions-pwd
 
 server:
   port: 8082
